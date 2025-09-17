@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.CreateTaskRequest;
+import com.example.demo.messaging.TaskEventPublisher;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
 import com.example.demo.repo.TaskRepository;
@@ -23,7 +24,7 @@ class TaskServiceTest {
 
     @Mock TaskRepository taskRepository;
     @Mock UserService userService;
-    @Mock NotificationService notificationService;
+    @Mock TaskEventPublisher eventPublisher;
 
     @InjectMocks TaskService taskService;
 
@@ -55,7 +56,7 @@ class TaskServiceTest {
         Task t = taskService.create(req);
         assertEquals(10L, t.getId());
         assertEquals(TaskStatus.PENDING, t.getStatus());
-        verify(notificationService).create(userId, "Task created: Task1");
+        verify(eventPublisher).publishTaskCreated(argThat(x -> x != null && x.getId().equals(10L)));
 
         List<Task> all = taskService.findAllByUser(userId);
         assertEquals(1, all.size());
@@ -66,12 +67,14 @@ class TaskServiceTest {
         Task t = new Task(10L, userId, "X", "", OffsetDateTime.now(),
                 OffsetDateTime.now().plusDays(1), TaskStatus.PENDING, false);
         when(taskRepository.findById(10L)).thenReturn(Optional.of(t));
+        // ВАЖНО: save должен вернуть объект, который уйдёт в publishTaskDeleted(...)
+        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
         taskService.softDelete(userId, 10L);
 
         assertTrue(t.isDeleted());
         verify(taskRepository).save(t);
-        verify(notificationService).create(userId, "Task deleted: X");
+        verify(eventPublisher).publishTaskDeleted(argThat(x -> x != null && x.getId().equals(10L)));
     }
 
     @Test
@@ -94,5 +97,6 @@ class TaskServiceTest {
                 .when(userService).requireUser(777L);
         assertThrows(ResponseStatusException.class, () -> taskService.create(req));
         verify(taskRepository, never()).save(any());
+        verify(eventPublisher, never()).publishTaskCreated(any());
     }
 }

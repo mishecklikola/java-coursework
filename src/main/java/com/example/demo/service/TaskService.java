@@ -4,6 +4,7 @@ import com.example.demo.dto.CreateTaskRequest;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
 import com.example.demo.repo.TaskRepository;
+import com.example.demo.messaging.TaskEventPublisher;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
@@ -20,12 +21,12 @@ import static com.example.demo.config.CacheConfig.CACHE_TASKS_PENDING;
 public class TaskService {
     private final TaskRepository tasks;
     private final UserService userService;
-    private final NotificationService notificationService;
+    private final TaskEventPublisher eventPublisher;
 
-    public TaskService(TaskRepository tasks, UserService userService, NotificationService notificationService) {
+    public TaskService(TaskRepository tasks, UserService userService, TaskEventPublisher eventPublisher) {
         this.tasks = tasks;
         this.userService = userService;
-        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @CacheEvict(cacheNames = {CACHE_TASKS_ALL, CACHE_TASKS_PENDING}, key = "#req.userId")
@@ -40,7 +41,7 @@ public class TaskService {
         t.setStatus(TaskStatus.PENDING);
         t.setDeleted(false);
         Task saved = tasks.save(t);
-        notificationService.create(req.getUserId(), "Task created: " + saved.getTitle());
+        eventPublisher.publishTaskCreated(saved);
         return saved;
     }
 
@@ -66,8 +67,8 @@ public class TaskService {
         }
         if (!t.isDeleted()) {
             t.setDeleted(true);
-            tasks.save(t);
-            notificationService.create(userId, "Task deleted: " + t.getTitle());
+            Task saved = tasks.save(t);
+            eventPublisher.publishTaskDeleted(saved);
         }
     }
 }
