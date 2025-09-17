@@ -4,12 +4,17 @@ import com.example.demo.dto.CreateTaskRequest;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
 import com.example.demo.repo.TaskRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+
+import static com.example.demo.config.CacheConfig.CACHE_TASKS_ALL;
+import static com.example.demo.config.CacheConfig.CACHE_TASKS_PENDING;
 
 @Service
 public class TaskService {
@@ -23,6 +28,7 @@ public class TaskService {
         this.notificationService = notificationService;
     }
 
+    @CacheEvict(cacheNames = {CACHE_TASKS_ALL, CACHE_TASKS_PENDING}, key = "#req.userId")
     public Task create(CreateTaskRequest req) {
         userService.requireUser(req.getUserId());
         Task t = new Task();
@@ -38,16 +44,19 @@ public class TaskService {
         return saved;
     }
 
+    @Cacheable(cacheNames = CACHE_TASKS_ALL, key = "#userId")
     public List<Task> findAllByUser(Long userId) {
         userService.requireUser(userId);
         return tasks.findByUserIdAndDeletedFalse(userId);
     }
 
+    @Cacheable(cacheNames = CACHE_TASKS_PENDING, key = "#userId")
     public List<Task> findPendingByUser(Long userId) {
         userService.requireUser(userId);
         return tasks.findByUserIdAndDeletedFalseAndStatus(userId, TaskStatus.PENDING);
     }
 
+    @CacheEvict(cacheNames = {CACHE_TASKS_ALL, CACHE_TASKS_PENDING}, key = "#userId")
     public void softDelete(Long userId, Long taskId) {
         userService.requireUser(userId);
         Task t = tasks.findById(taskId).orElseThrow(() ->
