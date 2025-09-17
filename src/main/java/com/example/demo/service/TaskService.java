@@ -1,10 +1,10 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.CreateTaskRequest;
+import com.example.demo.messaging.TaskEventPublisher;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
 import com.example.demo.repo.TaskRepository;
-import com.example.demo.messaging.TaskEventPublisher;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
@@ -40,6 +40,7 @@ public class TaskService {
         t.setTargetDate(req.getTargetDate());
         t.setStatus(TaskStatus.PENDING);
         t.setDeleted(false);
+        t.setOverdueNotified(false);
         Task saved = tasks.save(t);
         eventPublisher.publishTaskCreated(saved);
         return saved;

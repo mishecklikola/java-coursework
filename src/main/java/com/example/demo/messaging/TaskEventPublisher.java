@@ -18,24 +18,20 @@ public class TaskEventPublisher {
     }
 
     public void publishTaskCreated(Task task) {
-        TaskEvent event = new TaskEvent(
-                TaskEventType.TASK_CREATED,
-                task.getUserId(),
-                task.getId(),
-                task.getTitle(),
-                OffsetDateTime.now()
-        );
+        TaskEvent event = new TaskEvent(TaskEventType.TASK_CREATED, task.getUserId(), task.getId(),
+                task.getTitle(), OffsetDateTime.now());
         rabbitTemplate.convertAndSend(EXCHANGE, "task.created", event);
     }
 
     public void publishTaskDeleted(Task task) {
-        TaskEvent event = new TaskEvent(
-                TaskEventType.TASK_DELETED,
-                task.getUserId(),
-                task.getId(),
-                task.getTitle(),
-                OffsetDateTime.now()
-        );
+        TaskEvent event = new TaskEvent(TaskEventType.TASK_DELETED, task.getUserId(), task.getId(),
+                task.getTitle(), OffsetDateTime.now());
         rabbitTemplate.convertAndSend(EXCHANGE, "task.deleted", event);
+    }
+
+    public void publishTaskOverdue(Task task) {
+        TaskEvent event = new TaskEvent(TaskEventType.TASK_OVERDUE, task.getUserId(), task.getId(),
+                task.getTitle(), OffsetDateTime.now());
+        rabbitTemplate.convertAndSend(EXCHANGE, "task.overdue", event);
     }
 }

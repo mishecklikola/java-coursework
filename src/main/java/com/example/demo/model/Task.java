@@ -35,8 +35,13 @@ public class Task {
     @Column(nullable = false)
     private boolean deleted;
 
+    @Column(nullable = false)
+    private boolean overdueNotified;
+
     public Task() {}
-    public Task(Long id, Long userId, String title, String description, OffsetDateTime createdAt, OffsetDateTime targetDate, TaskStatus status, boolean deleted) {
+
+    public Task(Long id, Long userId, String title, String description, OffsetDateTime createdAt,
+                OffsetDateTime targetDate, TaskStatus status, boolean deleted) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -45,7 +50,9 @@ public class Task {
         this.targetDate = targetDate;
         this.status = status;
         this.deleted = deleted;
+        this.overdueNotified = false;
     }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
@@ -62,4 +69,6 @@ public class Task {
     public void setStatus(TaskStatus status) { this.status = status; }
     public boolean isDeleted() { return deleted; }
     public void setDeleted(boolean deleted) { this.deleted = deleted; }
+    public boolean isOverdueNotified() { return overdueNotified; }
+    public void setOverdueNotified(boolean overdueNotified) { this.overdueNotified = overdueNotified; }
 }
