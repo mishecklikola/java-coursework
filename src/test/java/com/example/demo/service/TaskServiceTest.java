@@ -1,37 +1,38 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.CreateTaskRequest;
-import com.example.demo.dto.CreateUserRequest;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
+import com.example.demo.repo.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
-    @Autowired UserService userService;
-    @Autowired NotificationService notificationService;
-    @Autowired TaskService taskService;
+
+    @Mock TaskRepository taskRepository;
+    @Mock UserService userService;
+    @Mock NotificationService notificationService;
+
+    @InjectMocks TaskService taskService;
+
     Long userId;
 
     @BeforeEach
     void setUp() {
-        CreateUserRequest r = new CreateUserRequest();
-        r.setName("T");
-        r.setEmail("t@example.com");
-        r.setPassword("p");
-        userId = userService.register(r).getId();
+        userId = 1L;
+        lenient().doReturn(null).when(userService).requireUser(userId);
     }
 
     @Test
@@ -41,28 +42,46 @@ class TaskServiceTest {
         req.setTitle("Task1");
         req.setDescription("d");
         req.setTargetDate(OffsetDateTime.now().plusDays(1));
+
+        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> {
+            Task t = inv.getArgument(0);
+            t.setId(10L);
+            return t;
+        });
+        when(taskRepository.findByUserIdAndDeletedFalse(userId))
+                .thenReturn(List.of(new Task(10L, userId, "Task1", "d", OffsetDateTime.now(),
+                        req.getTargetDate(), TaskStatus.PENDING, false)));
+
         Task t = taskService.create(req);
-        assertNotNull(t.getId());
+        assertEquals(10L, t.getId());
         assertEquals(TaskStatus.PENDING, t.getStatus());
+        verify(notificationService).create(userId, "Task created: Task1");
+
         List<Task> all = taskService.findAllByUser(userId);
         assertEquals(1, all.size());
     }
 
     @Test
-    void softDeleteHidesFromGet() {
-        CreateTaskRequest req = new CreateTaskRequest();
-        req.setUserId(userId);
-        req.setTitle("X");
-        req.setDescription("");
-        req.setTargetDate(OffsetDateTime.now().plusDays(1));
-        Task t = taskService.create(req);
-        taskService.softDelete(userId, t.getId());
-        assertTrue(taskService.findAllByUser(userId).isEmpty());
+    void softDeleteFlow() {
+        Task t = new Task(10L, userId, "X", "", OffsetDateTime.now(),
+                OffsetDateTime.now().plusDays(1), TaskStatus.PENDING, false);
+        when(taskRepository.findById(10L)).thenReturn(Optional.of(t));
+
+        taskService.softDelete(userId, 10L);
+
+        assertTrue(t.isDeleted());
+        verify(taskRepository).save(t);
+        verify(notificationService).create(userId, "Task deleted: X");
     }
 
     @Test
-    void deleteNotOwnedOrMissing404() {
-        assertThrows(Exception.class, () -> taskService.softDelete(userId, 999L));
+    void softDeleteNotFoundOrNotOwned() {
+        when(taskRepository.findById(999L)).thenReturn(Optional.empty());
+        assertThrows(ResponseStatusException.class, () -> taskService.softDelete(userId, 999L));
+
+        Task other = new Task(11L, 777L, "Y","", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1), TaskStatus.PENDING, false);
+        when(taskRepository.findById(11L)).thenReturn(Optional.of(other));
+        assertThrows(ResponseStatusException.class, () -> taskService.softDelete(userId, 11L));
     }
 
     @Test
@@ -71,6 +90,9 @@ class TaskServiceTest {
         req.setUserId(777L);
         req.setTitle("A");
         req.setTargetDate(OffsetDateTime.now().plusDays(1));
-        assertThrows(Exception.class, () -> taskService.create(req));
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND))
+                .when(userService).requireUser(777L);
+        assertThrows(ResponseStatusException.class, () -> taskService.create(req));
+        verify(taskRepository, never()).save(any());
     }
 }
