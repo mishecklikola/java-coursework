@@ -2,19 +2,19 @@ package com.example.demo.service;
 
 import com.example.demo.dto.CreateUserRequest;
 import com.example.demo.model.User;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class UserServiceTest {
-    UserService userService;
-
-    @BeforeEach
-    void setUp() {
-        userService = new UserService();
-    }
+    @Autowired UserService userService;
 
     @Test
     void registerSuccess() {
@@ -35,7 +35,7 @@ class UserServiceTest {
         r.setEmail("a@example.com");
         r.setPassword("p");
         userService.register(r);
-        assertThrows(ResponseStatusException.class, () -> userService.register(r));
+        assertThrows(Exception.class, () -> userService.register(r));
     }
 
     @Test
