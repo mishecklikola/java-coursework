@@ -24,7 +24,8 @@ public class UserController {
     }
 
     @GetMapping("/login")
-    public ResponseEntity<User> login(@RequestParam String email, @RequestParam String password) {
+    public ResponseEntity<User> login(@RequestParam("email") String email,
+                                      @RequestParam("password") String password) {
         return users.login(email, password)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
