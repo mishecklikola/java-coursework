@@ -1,15 +1,38 @@
 package com.example.demo.model;
 
+import jakarta.persistence.*;
+
 import java.time.OffsetDateTime;
 
+@Entity
+@Table(name = "tasks", indexes = {
+        @Index(name = "idx_tasks_user", columnList = "userId,deleted,status")
+})
 public class Task {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private Long userId;
+
+    @Column(nullable = false, length = 255)
     private String title;
+
+    @Column(columnDefinition = "text")
     private String description;
+
+    @Column(nullable = false)
     private OffsetDateTime createdAt;
+
+    @Column(nullable = false)
     private OffsetDateTime targetDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private TaskStatus status;
+
+    @Column(nullable = false)
     private boolean deleted;
 
     public Task() {}

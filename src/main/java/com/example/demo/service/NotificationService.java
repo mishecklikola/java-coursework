@@ -2,34 +2,38 @@ package com.example.demo.service;
 
 import com.example.demo.model.Notification;
 import com.example.demo.model.NotificationStatus;
+import com.example.demo.repo.NotificationRepository;
 import org.springframework.stereotype.Service;
+
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class NotificationService {
-    private final ConcurrentHashMap<Long, Notification> notifications = new ConcurrentHashMap<>();
-    private final AtomicLong idSeq = new AtomicLong(1);
+    private final NotificationRepository notifications;
+
+    public NotificationService(NotificationRepository notifications) {
+        this.notifications = notifications;
+    }
 
     public Notification create(Long userId, String message) {
-        Long id = idSeq.getAndIncrement();
-        Notification n = new Notification(id, userId, message, OffsetDateTime.now(), NotificationStatus.PENDING);
-        notifications.put(id, n);
-        return n;
+        Notification n = new Notification();
+        n.setUserId(userId);
+        n.setMessage(message);
+        n.setCreatedAt(OffsetDateTime.now());
+        n.setStatus(NotificationStatus.PENDING);
+        return notifications.save(n);
+    }
+
+    public Notification update(Notification notification) {
+        return notifications.save(notification);
     }
 
     public List<Notification> findAllByUser(Long userId) {
-        List<Notification> list = new ArrayList<>();
-        for (Notification n : notifications.values()) if (n.getUserId().equals(userId)) list.add(n);
-        return list;
+        return notifications.findByUserId(userId);
     }
 
     public List<Notification> findPendingByUser(Long userId) {
-        List<Notification> list = new ArrayList<>();
-        for (Notification n : notifications.values()) if (n.getUserId().equals(userId) && n.getStatus() == NotificationStatus.PENDING) list.add(n);
-        return list;
+        return notifications.findByUserIdAndStatus(userId, NotificationStatus.PENDING);
     }
 }

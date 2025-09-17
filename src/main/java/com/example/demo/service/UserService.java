@@ -2,44 +2,41 @@ package com.example.demo.service;
 
 import com.example.demo.dto.CreateUserRequest;
 import com.example.demo.model.User;
+import com.example.demo.repo.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class UserService {
-    private final Map<Long, User> usersById = new ConcurrentHashMap<>();
-    private final Map<String, Long> idByEmail = new ConcurrentHashMap<>();
-    private final AtomicLong idSeq = new AtomicLong(1);
+    private final UserRepository users;
+
+    public UserService(UserRepository users) {
+        this.users = users;
+    }
 
     public User register(CreateUserRequest req) {
-        if (idByEmail.containsKey(req.getEmail().toLowerCase())) {
+        if (users.existsByEmailIgnoreCase(req.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
-        Long id = idSeq.getAndIncrement();
-        User user = new User(id, req.getName(), req.getEmail().toLowerCase(), req.getPassword(), OffsetDateTime.now());
-        usersById.put(id, user);
-        idByEmail.put(user.getEmail(), id);
-        return user;
+        User u = new User();
+        u.setName(req.getName());
+        u.setEmail(req.getEmail().toLowerCase());
+        u.setPassword(req.getPassword());
+        u.setCreatedAt(OffsetDateTime.now());
+        return users.save(u);
     }
 
     public Optional<User> login(String email, String password) {
-        Long id = idByEmail.get(email.toLowerCase());
-        if (id == null) return Optional.empty();
-        User user = usersById.get(id);
-        if (user == null) return Optional.empty();
-        if (!user.getPassword().equals(password)) return Optional.empty();
-        return Optional.of(user);
+        return users.findByEmailIgnoreCase(email)
+                .filter(u -> u.getPassword().equals(password));
     }
 
     public User requireUser(Long userId) {
-        User user = usersById.get(userId);
-        if (user == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        return user;
+        return users.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 }

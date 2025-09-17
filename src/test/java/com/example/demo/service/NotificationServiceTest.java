@@ -2,26 +2,28 @@ package com.example.demo.service;
 
 import com.example.demo.model.Notification;
 import com.example.demo.model.NotificationStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class NotificationServiceTest {
-    NotificationService service;
-
-    @BeforeEach
-    void setUp() {
-        service = new NotificationService();
-    }
+    @Autowired NotificationService service;
 
     @Test
     void createAndFilter() {
         Notification n1 = service.create(1L, "m1");
         Notification n2 = service.create(1L, "m2");
         n2.setStatus(NotificationStatus.SENT);
+        service.update(n2);
 
         List<Notification> all = service.findAllByUser(1L);
         List<Notification> pending = service.findPendingByUser(1L);

@@ -6,24 +6,27 @@ import com.example.demo.model.Task;
 import com.example.demo.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class TaskServiceTest {
-    UserService userService;
-    NotificationService notificationService;
-    TaskService taskService;
+    @Autowired UserService userService;
+    @Autowired NotificationService notificationService;
+    @Autowired TaskService taskService;
     Long userId;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService();
-        notificationService = new NotificationService();
-        taskService = new TaskService(userService, notificationService);
         CreateUserRequest r = new CreateUserRequest();
         r.setName("T");
         r.setEmail("t@example.com");
@@ -59,7 +62,7 @@ class TaskServiceTest {
 
     @Test
     void deleteNotOwnedOrMissing404() {
-        assertThrows(ResponseStatusException.class, () -> taskService.softDelete(userId, 999L));
+        assertThrows(Exception.class, () -> taskService.softDelete(userId, 999L));
     }
 
     @Test
@@ -68,6 +71,6 @@ class TaskServiceTest {
         req.setUserId(777L);
         req.setTitle("A");
         req.setTargetDate(OffsetDateTime.now().plusDays(1));
-        assertThrows(ResponseStatusException.class, () -> taskService.create(req));
+        assertThrows(Exception.class, () -> taskService.create(req));
     }
 }

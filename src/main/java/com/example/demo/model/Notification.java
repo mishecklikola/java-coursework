@@ -1,12 +1,29 @@
 package com.example.demo.model;
 
+import jakarta.persistence.*;
+
 import java.time.OffsetDateTime;
 
+@Entity
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notif_user_status", columnList = "userId,status")
+})
 public class Notification {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private Long userId;
+
+    @Column(nullable = false, length = 1000)
     private String message;
+
+    @Column(nullable = false)
     private OffsetDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private NotificationStatus status;
 
     public Notification() {}
