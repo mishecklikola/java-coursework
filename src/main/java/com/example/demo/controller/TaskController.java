@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -19,12 +20,12 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAll(@RequestParam Long userId) {
+    public ResponseEntity<List<Task>> getAll(@RequestParam("userId") Long userId) {
         return ResponseEntity.ok(tasks.findAllByUser(userId));
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<Task>> getPending(@RequestParam Long userId) {
+    public ResponseEntity<List<Task>> getPending(@RequestParam("userId") Long userId) {
         return ResponseEntity.ok(tasks.findPendingByUser(userId));
     }
 
@@ -35,7 +36,8 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> delete(@PathVariable Long taskId, @RequestParam Long userId) {
+    public ResponseEntity<Void> delete(@PathVariable("taskId") Long taskId,
+                                       @RequestParam("userId") Long userId) {
         tasks.softDelete(userId, taskId);
         return ResponseEntity.noContent().build();
     }

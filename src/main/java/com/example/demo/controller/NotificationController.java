@@ -5,6 +5,7 @@ import com.example.demo.service.NotificationService;
 import com.example.demo.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -19,13 +20,13 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Notification>> getAll(@RequestParam Long userId) {
+    public ResponseEntity<List<Notification>> getAll(@RequestParam("userId") Long userId) {
         users.requireUser(userId);
         return ResponseEntity.ok(notifications.findAllByUser(userId));
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<Notification>> getPending(@RequestParam Long userId) {
+    public ResponseEntity<List<Notification>> getPending(@RequestParam("userId") Long userId) {
         users.requireUser(userId);
         return ResponseEntity.ok(notifications.findPendingByUser(userId));
     }
